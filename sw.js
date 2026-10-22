@@ -1,6 +1,6 @@
 // Guarda os arquivos do app para funcionar sem internet.
 // Mude a versão sempre que algum arquivo do app mudar.
-const CACHE = 'orgfin-v4';
+const CACHE = 'orgfin-v5';
 const ARQUIVOS = [
   './',
   './index.html',
