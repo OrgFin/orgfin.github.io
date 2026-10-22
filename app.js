@@ -1360,7 +1360,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 // Com o firebase-config.js preenchido, o app pede login e guarda os dados na conta.
 // Sem ele, funciona só no aparelho, como antes.
 const CHAVE_SYNC = 'orgfin.sync';
-const conta = { fb: null, auth: null, db: null, user: null, parar: null, timer: null, pendente: false };
+const conta = { fb: null, auth: null, db: null, user: null, parar: null, timer: null, pendente: false, criando: false };
 
 function lerSync() { try { return JSON.parse(localStorage.getItem(CHAVE_SYNC)) || {}; } catch (e) { return {}; } }
 function gravarSync(info) { try { localStorage.setItem(CHAVE_SYNC, JSON.stringify(info)); } catch (e) { /* sem armazenamento */ } }
@@ -1485,8 +1485,10 @@ document.addEventListener('submit', async (e) => {
     if (d.modo !== 'esqueci') {
       // cria a conta com uma senha provisória e manda o email para a pessoa definir a dela
       const provisoria = Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, '0')).join('');
+      conta.criando = true; // a conta nova entra sozinha; não abre o app antes de a pessoa criar a senha
       try { await createUserWithEmailAndPassword(conta.auth, email, provisoria); await signOut(conta.auth); }
       catch (err) { if (err.code !== 'auth/email-already-in-use') throw err; }
+      finally { conta.criando = false; }
     }
     try { await sendPasswordResetEmail(conta.auth, email, { url: location.origin + location.pathname }); }
     catch (err) { if (err.code === 'auth/unauthorized-continue-uri') await sendPasswordResetEmail(conta.auth, email); else throw err; }
@@ -1543,6 +1545,7 @@ async function iniciarConta() {
   conta.auth = conta.fb.getAuth(app); conta.auth.languageCode = 'pt-BR';
   conta.db = conta.fb.getFirestore(app);
   conta.fb.onAuthStateChanged(conta.auth, (user) => {
+    if (conta.criando) return;
     if (user) { esconderLogin(); render(); iniciarSync(user); }
     else { conta.user = null; telaLogin('entrar'); }
   });
