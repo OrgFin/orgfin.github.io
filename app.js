@@ -2,7 +2,7 @@
 
 /* ================= Estado e armazenamento ================= */
 
-const CHAVE = 'meu-caixa.v1';
+const CHAVE = 'meu-caixa.v1'; // nome antigo mantido para não perder os dados já salvos
 
 const CATEGORIAS_SAIDA = ['Moradia', 'Contas da casa', 'Mercado', 'Restaurante e delivery', 'Transporte', 'Saúde', 'Educação',
   'Assinaturas', 'Cartão de crédito', 'Dívidas', 'Lazer', 'Compras', 'Família', 'Outros'];
@@ -18,8 +18,7 @@ function estadoVazio() {
       dataSaldo: hojeISO(),
       saldoDefinido: false,
       faixas: [-500, 0, 1000, 2000],
-      sabadoUtil: false,
-      tema: 'auto'
+      sabadoUtil: false
     },
     recorrentes: [],
     lancamentos: [],
@@ -258,11 +257,6 @@ function toast(msg) {
   clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
-function aplicarTema() {
-  const t = S.config.tema;
-  if (t === 'auto') document.documentElement.removeAttribute('data-theme');
-  else document.documentElement.setAttribute('data-theme', t);
-}
 
 function corValor(v) { return v < 0 ? 'neg' : ''; }
 function tagForma(f) { return f && f !== 'dinheiro' ? ` <span class="tag">${f === 'cartao' ? 'cartão' : 'vale'}</span>` : ''; }
@@ -283,7 +277,6 @@ function legendaFaixas() {
 const VIEWS = {};
 
 function render() {
-  aplicarTema();
   { const [y, m] = ui.mes.split('-').map(Number), n = NOMES_MES[m - 1]; $('#monthLabel').textContent = `${n[0].toUpperCase()}${n.slice(1)} ${y}`; }
   const noMais = ['contas', 'economia', 'ajustes', 'mais'].includes(ui.view);
   document.querySelectorAll('.nav-item').forEach((b) => b.classList.toggle('active', b.dataset.view === ui.view || (b.dataset.view === 'mais' && noMais)));
@@ -1002,12 +995,6 @@ VIEWS.ajustes = () => {
         <label class="field"><span>Tranquilo abaixo de</span><input name="f3" inputmode="decimal" value="${valorCampo(c.faixas[3])}"></label>
       </div>
       <label style="display:flex;gap:8px;align-items:center;margin-top:14px"><input type="checkbox" class="check" name="sabado" ${c.sabadoUtil ? 'checked' : ''}> Contar sábado como dia útil (para salário no "5º dia útil")</label>
-      <div class="row" style="margin-top:12px">
-        <label class="field"><span>Aparência</span><select name="tema">
-          <option value="auto" ${c.tema === 'auto' ? 'selected' : ''}>Igual ao sistema</option>
-          <option value="light" ${c.tema === 'light' ? 'selected' : ''}>Claro</option>
-          <option value="dark" ${c.tema === 'dark' ? 'selected' : ''}>Escuro</option></select></label>
-      </div>
       <div style="margin-top:12px"><button class="btn primary" type="submit">Salvar ajustes</button></div>
     </form>
 
@@ -1015,7 +1002,7 @@ VIEWS.ajustes = () => {
       <div class="card-head"><h2>Instalar o app</h2></div>
       ${instalado ? '<p>O app já está instalado neste aparelho.</p>' : `
       ${eventoInstalar ? '<p><button class="btn primary" data-action="instalar">Instalar neste aparelho</button></p>' : ''}
-      <p class="small"><b>Computador (Chrome ou Edge):</b> clique no ícone de instalar na barra de endereço, ou no menu ⋮ e depois em "Instalar Meu Caixa".</p>
+      <p class="small"><b>Computador (Chrome ou Edge):</b> clique no ícone de instalar na barra de endereço, ou no menu ⋮ e depois em "Instalar OrgFin".</p>
       <p class="small"><b>Android (Chrome):</b> menu ⋮ e depois "Adicionar à tela inicial" ou "Instalar app".</p>
       <p class="small"><b>iPhone (Safari):</b> botão de compartilhar e depois "Adicionar à Tela de Início".</p>`}
       <p class="small muted">Depois de instalado, funciona sem internet.</p>
@@ -1311,7 +1298,7 @@ document.addEventListener('submit', (e) => {
     e.preventDefault();
     const d = new FormData(e.target), f = ['f0', 'f1', 'f2', 'f3'].map((k) => lerValor(d.get(k)));
     if (f.some((x) => !Number.isFinite(x)) || !(f[0] < f[1] && f[1] < f[2] && f[2] < f[3])) { toast('Os limites precisam estar em ordem crescente'); return; }
-    S.config.faixas = f; S.config.sabadoUtil = !!d.get('sabado'); S.config.tema = d.get('tema');
+    S.config.faixas = f; S.config.sabadoUtil = !!d.get('sabado');
     salvar(); render(); toast('Ajustes salvos');
   }
 });
@@ -1339,7 +1326,7 @@ window.addEventListener('storage', (e) => { if (e.key === CHAVE) { S = carregar(
 function exportar() {
   const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = `meu-caixa-backup-${hojeISO()}.json`;
+  a.href = URL.createObjectURL(blob); a.download = `orgfin-backup-${hojeISO()}.json`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   toast('Backup exportado');

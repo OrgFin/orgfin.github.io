@@ -1,4 +1,4 @@
-# Meu Caixa
+# OrgFin
 
 App de organização financeira pessoal que instala no computador e no celular (PWA). Funciona sem internet e guarda os dados só no aparelho.
 
