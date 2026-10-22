@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Meu Caixa</title>
+  <meta name="description" content="Organização financeira pessoal: plano de contas, termômetro de saldo diário e economia do mês.">
+  <meta name="theme-color" content="#0f5132" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#12261c" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Meu Caixa">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <nav class="nav" aria-label="Seções">
+      <div class="brand">
+        <img src="icons/icon.svg" alt="" width="28" height="28">
+        <span>Meu Caixa</span>
+      </div>
+      <button class="nav-item" data-view="painel"><span class="ni">&#9673;</span><span>Painel</span></button>
+      <button class="nav-item" data-view="lancar"><span class="ni">&#43;</span><span>Lançar</span></button>
+      <button class="nav-item" data-view="plano"><span class="ni">&#10148;</span><span>Plano</span></button>
+      <button class="nav-item" data-view="termometro"><span class="ni">&#9636;</span><span>Termômetro</span></button>
+      <button class="nav-item desk" data-view="contas"><span class="ni">&#9776;</span><span>Contas</span></button>
+      <button class="nav-item desk" data-view="economia"><span class="ni">&#9650;</span><span>Economia</span></button>
+      <button class="nav-item desk" data-view="ajustes"><span class="ni">&#9881;</span><span>Ajustes</span></button>
+      <button class="nav-item mob" data-view="mais"><span class="ni">&#8943;</span><span>Mais</span></button>
+    </nav>
+    <div class="content">
+      <header class="topbar">
+        <div class="month-picker" id="monthPicker">
+          <button class="icon-btn" data-action="mes-anterior" aria-label="Mês anterior">&#8249;</button>
+          <button class="month-label" data-action="mes-atual" id="monthLabel" title="Voltar para o mês atual"></button>
+          <button class="icon-btn" data-action="mes-seguinte" aria-label="Mês seguinte">&#8250;</button>
+        </div>
+        <button class="btn primary" data-action="novo-lancamento">+ Lançamento</button>
+      </header>
+      <main id="main" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <dialog id="dialog"><form method="dialog" id="dialogForm"></form></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="tooltip" class="tooltip" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
