@@ -280,6 +280,27 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
 .progress span { display: block; height: 100%; background: var(--accent); border-radius: 5px; }
 .mais-list .nav-item { width: 100%; font-size: 1rem; padding: 14px 12px; flex-direction: row; }
 
+/* login */
+#login {
+  position: fixed; inset: 0; z-index: 100; background: var(--bg); display: grid; place-items: center;
+  padding: 24px 16px; overflow-y: auto;
+}
+#login[hidden] { display: none; }
+body.com-login .app { visibility: hidden; }
+.login-card {
+  width: min(400px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 20px;
+  padding: 28px 24px; box-shadow: var(--shadow);
+}
+.login-brand { display: flex; align-items: center; gap: 12px; font-size: 1.6rem; font-weight: 750; color: var(--nav); }
+.login-sub { color: var(--ink-2); margin: 6px 0 18px; }
+.login-seg { width: 100%; margin-bottom: 16px; }
+.login-seg button { flex: 1; }
+.login-form { display: grid; gap: 12px; }
+.login-form .link-btn { justify-self: center; font-size: .9rem; }
+.login-aviso { margin-top: 14px; font-size: .9rem; color: var(--ink-2); }
+.login-aviso:empty { display: none; }
+.btn:disabled { opacity: .6; cursor: default; }
+
 /* celular */
 @media (max-width: 860px) {
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }

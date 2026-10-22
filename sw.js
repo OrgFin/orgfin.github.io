@@ -1,6 +1,6 @@
 // Guarda os arquivos do app para funcionar sem internet.
 // Mude a versão sempre que algum arquivo do app mudar.
-const CACHE = 'orgfin-v3';
+const CACHE = 'orgfin-v4';
 const ARQUIVOS = [
   './',
   './index.html',
@@ -13,7 +13,9 @@ const ARQUIVOS = [
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
   './vendor/pdf.min.mjs',
-  './vendor/pdf.worker.min.mjs'
+  './vendor/pdf.worker.min.mjs',
+  './vendor/firebase.min.mjs',
+  './firebase-config.js'
 ];
 
 self.addEventListener('install', (e) => {

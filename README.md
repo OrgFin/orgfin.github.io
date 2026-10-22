@@ -18,6 +18,12 @@ App de organização financeira pessoal que instala no computador e no celular (
 
 ## Dados
 
-Nada é enviado para servidor. Para levar os dados do computador para o celular, use Exportar backup em um e Importar backup no outro.
+Sem login, nada é enviado para servidor. Para levar os dados do computador para o celular, use Exportar backup em um e Importar backup no outro.
 
 A leitura de PDF usa o [PDF.js](https://mozilla.github.io/pdf.js/) (licença Apache 2.0, em `vendor/`).
+
+## Login e sincronização
+
+Com `firebase-config.js` preenchido com o `firebaseConfig` de um projeto Firebase (Authentication com Email/senha e Firestore), o app pede login. Quem não tem conta informa o email e recebe um link para criar a senha. Os dados ficam no documento `usuarios/{uid}` do Firestore, e as regras do banco devem permitir leitura e escrita só ao próprio usuário. Com `window.ORGFIN_FIREBASE = null`, o app funciona só no aparelho.
+
+O Firebase é carregado de `vendor/firebase.min.mjs` (Firebase JS SDK, licença Apache 2.0).

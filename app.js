@@ -54,6 +54,7 @@ function salvar() {
   cache.clear();
   try { localStorage.setItem(CHAVE, JSON.stringify(S)); }
   catch (e) { toast('Não foi possível salvar neste navegador. Exporte um backup.'); }
+  marcarAlteracao();
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -1008,15 +1009,7 @@ VIEWS.ajustes = () => {
       <p class="small muted">Depois de instalado, funciona sem internet.</p>
     </div>
 
-    <div class="card">
-      <div class="card-head"><h2>Seus dados</h2></div>
-      <p class="small muted" style="margin:-4px 0 12px">Tudo fica salvo só neste aparelho, nada vai para a internet. Por isso o computador e o celular não se sincronizam sozinhos: exporte o backup num e importe no outro. Faça um backup de vez em quando.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn" data-action="exportar">Exportar backup</button>
-        <label class="btn">Importar backup<input type="file" accept="application/json,.json" id="importar" hidden></label>
-        <button class="btn danger" data-action="apagar-tudo">Apagar tudo</button>
-      </div>
-    </div>
+    ${cartaoConta()}
   </div>`;
 };
 
@@ -1221,6 +1214,7 @@ document.addEventListener('click', (e) => {
     else if (acao === 'nova-divida') formDivida();
     else if (acao === 'exportar') exportar();
     else if (acao === 'apagar-tudo') apagarTudo();
+    else if (acao === 'sair') sairDaConta();
     else if (acao === 'pdf-salvar') salvarPdf();
     else if (acao === 'pdf-cancelar') { ui.pdf = null; render(); }
     else if (acao === 'instalar' && eventoInstalar) { eventoInstalar.prompt(); eventoInstalar.userChoice.finally(() => { eventoInstalar = null; render(); }); }
@@ -1361,10 +1355,204 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
 
+/* ================= Conta e sincronização ================= */
+
+// Com o firebase-config.js preenchido, o app pede login e guarda os dados na conta.
+// Sem ele, funciona só no aparelho, como antes.
+const CHAVE_SYNC = 'orgfin.sync';
+const conta = { fb: null, auth: null, db: null, user: null, parar: null, timer: null, pendente: false };
+
+function lerSync() { try { return JSON.parse(localStorage.getItem(CHAVE_SYNC)) || {}; } catch (e) { return {}; } }
+function gravarSync(info) { try { localStorage.setItem(CHAVE_SYNC, JSON.stringify(info)); } catch (e) { /* sem armazenamento */ } }
+
+function marcarAlteracao() {
+  if (!conta.user) return;
+  const info = lerSync(); info.atualizado = Date.now(); gravarSync(info);
+  clearTimeout(conta.timer); conta.timer = setTimeout(enviarDados, 1200);
+}
+
+async function enviarDados() {
+  if (!conta.user) return;
+  const info = lerSync(), { doc, setDoc } = conta.fb;
+  try {
+    await setDoc(doc(conta.db, 'usuarios', conta.user.uid), { dados: JSON.stringify(S), atualizado: info.atualizado || Date.now(), email: conta.user.email });
+    info.enviado = info.atualizado; info.uid = conta.user.uid; gravarSync(info);
+    conta.pendente = false;
+  } catch (e) {
+    conta.pendente = true;
+    console.warn('Envio pendente', e);
+  }
+  if (ui.view === 'ajustes') render();
+}
+
+function adotarRemoto(remoto) {
+  try { S = normalizar(JSON.parse(remoto.dados)); } catch (e) { return; }
+  try { localStorage.setItem(CHAVE, JSON.stringify(S)); } catch (e) { /* sem armazenamento */ }
+  const info = lerSync(); info.uid = conta.user.uid; info.atualizado = info.enviado = remoto.atualizado; gravarSync(info);
+  cache.clear(); render();
+}
+
+async function iniciarSync(user) {
+  conta.user = user;
+  const { doc, getDoc, onSnapshot } = conta.fb, ref = doc(conta.db, 'usuarios', user.uid);
+  const info = lerSync(), outraConta = info.uid !== user.uid;
+  const localTemDados = S.recorrentes.length || S.lancamentos.length || S.dividas.length;
+  try {
+    const snap = await getDoc(ref), remoto = snap.exists() ? snap.data() : null;
+    if (!remoto) {
+      if (outraConta) { info.uid = user.uid; info.atualizado = Date.now(); gravarSync(info); }
+      await enviarDados();
+    } else if (outraConta) {
+      if (!localTemDados) adotarRemoto(remoto);
+      else if (confirm('Este aparelho tem dados que ainda não estão na sua conta.\n\nOK: usar os dados da conta (os deste aparelho serão substituídos).\nCancelar: enviar os dados deste aparelho para a conta.')) adotarRemoto(remoto);
+      else { info.uid = user.uid; info.atualizado = Date.now(); gravarSync(info); await enviarDados(); }
+    } else if ((remoto.atualizado || 0) > (info.atualizado || 0)) {
+      adotarRemoto(remoto);
+    } else if ((info.atualizado || 0) > (remoto.atualizado || 0)) {
+      await enviarDados();
+    }
+  } catch (e) {
+    console.warn('Sem conexão com a conta', e);
+    conta.pendente = true;
+  }
+  // mudanças feitas em outro aparelho chegam sozinhas
+  if (conta.parar) conta.parar();
+  conta.parar = onSnapshot(ref, (snap) => {
+    if (!snap.exists() || snap.metadata.hasPendingWrites) return;
+    const remoto = snap.data();
+    if ((remoto.atualizado || 0) > (lerSync().atualizado || 0)) { adotarRemoto(remoto); toast('Dados atualizados de outro aparelho'); }
+  }, () => {});
+}
+
+window.addEventListener('online', () => { if (conta.user && conta.pendente) enviarDados(); });
+
+const ERROS_LOGIN = {
+  'auth/invalid-credential': 'Email ou senha incorretos.',
+  'auth/wrong-password': 'Email ou senha incorretos.',
+  'auth/user-not-found': 'Email ou senha incorretos.',
+  'auth/invalid-email': 'Esse email não parece válido.',
+  'auth/too-many-requests': 'Muitas tentativas. Espere alguns minutos e tente de novo.',
+  'auth/network-request-failed': 'Sem internet. Conecte e tente de novo.',
+  'auth/user-disabled': 'Essa conta foi desativada.'
+};
+const msgErro = (e) => ERROS_LOGIN[e && e.code] || 'Não deu certo. Tente de novo.';
+
+function telaLogin(modo = 'entrar', aviso = '') {
+  const el = $('#login');
+  el.hidden = false; document.body.classList.add('com-login');
+  el.innerHTML = `<div class="login-card">
+    <div class="login-brand"><img src="icons/icon.svg" alt="" width="44" height="44"><span>OrgFin</span></div>
+    <p class="login-sub">Organização financeira pessoal</p>
+    <div class="seg login-seg"><button type="button" data-login-modo="entrar" class="${modo === 'entrar' ? 'on' : ''}">Entrar</button><button type="button" data-login-modo="criar" class="${modo !== 'entrar' ? 'on' : ''}">Criar conta</button></div>
+    ${modo === 'entrar' ? `
+    <form id="formEntrar" class="login-form">
+      <label class="field"><span>Email</span><input type="email" name="email" autocomplete="email" required autofocus></label>
+      <label class="field"><span>Senha</span><input type="password" name="senha" autocomplete="current-password" required></label>
+      <button class="btn primary" type="submit">Entrar</button>
+      <button class="link-btn" type="button" data-login-modo="esqueci">Esqueci minha senha</button>
+    </form>` : `
+    <form id="formCriar" class="login-form">
+      <p class="small muted" style="margin:0">${modo === 'esqueci' ? 'Informe seu email. Vamos mandar um link para você criar uma senha nova.' : 'Informe seu email. Vamos mandar um link para você criar sua senha.'}</p>
+      <label class="field"><span>Email</span><input type="email" name="email" autocomplete="email" required autofocus></label>
+      <input type="hidden" name="modo" value="${modo}">
+      <button class="btn primary" type="submit">Enviar email</button>
+    </form>`}
+    <div class="login-aviso" id="loginAviso">${aviso}</div>
+  </div>`;
+  const f = el.querySelector('input[autofocus]'); if (f) f.focus();
+}
+
+function esconderLogin() { const el = $('#login'); el.hidden = true; el.innerHTML = ''; document.body.classList.remove('com-login'); }
+
+document.addEventListener('click', (e) => {
+  const m = e.target.closest('[data-login-modo]');
+  if (m) telaLogin(m.dataset.loginModo);
+});
+
+document.addEventListener('submit', async (e) => {
+  const id = e.target.id;
+  if (id !== 'formEntrar' && id !== 'formCriar') return;
+  e.preventDefault();
+  const d = Object.fromEntries(new FormData(e.target)), aviso = $('#loginAviso'), botao = e.target.querySelector('button[type=submit]');
+  const email = String(d.email || '').trim();
+  botao.disabled = true; aviso.textContent = 'Aguarde...';
+  const { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } = conta.fb;
+  try {
+    if (id === 'formEntrar') {
+      await signInWithEmailAndPassword(conta.auth, email, d.senha);
+      return; // onAuthStateChanged continua daqui
+    }
+    if (d.modo !== 'esqueci') {
+      // cria a conta com uma senha provisória e manda o email para a pessoa definir a dela
+      const provisoria = Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, '0')).join('');
+      try { await createUserWithEmailAndPassword(conta.auth, email, provisoria); await signOut(conta.auth); }
+      catch (err) { if (err.code !== 'auth/email-already-in-use') throw err; }
+    }
+    try { await sendPasswordResetEmail(conta.auth, email, { url: location.origin + location.pathname }); }
+    catch (err) { if (err.code === 'auth/unauthorized-continue-uri') await sendPasswordResetEmail(conta.auth, email); else throw err; }
+    telaLogin('entrar', `Enviamos um email para <b>${esc(email)}</b>. Abra o link, crie sua senha e volte aqui para entrar. Se não chegar em alguns minutos, olhe a caixa de spam.`);
+  } catch (err) {
+    aviso.textContent = msgErro(err); botao.disabled = false;
+  }
+});
+
+async function sairDaConta() {
+  if (!confirm('Sair da conta neste aparelho? Seus dados continuam guardados na conta e voltam quando você entrar de novo.')) return;
+  if (conta.pendente) await enviarDados();
+  if (conta.parar) { conta.parar(); conta.parar = null; }
+  await conta.fb.signOut(conta.auth);
+  try { localStorage.removeItem(CHAVE); localStorage.removeItem(CHAVE_SYNC); } catch (e) { /* sem armazenamento */ }
+  S = estadoVazio(); cache.clear();
+}
+
+function cartaoConta() {
+  if (!conta.auth) return `<div class="card">
+      <div class="card-head"><h2>Seus dados</h2></div>
+      <p class="small muted" style="margin:-4px 0 12px">Tudo fica salvo só neste aparelho. Para levar os dados para outro aparelho, exporte o backup num e importe no outro.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" data-action="exportar">Exportar backup</button>
+        <label class="btn">Importar backup<input type="file" accept="application/json,.json" id="importar" hidden></label>
+        <button class="btn danger" data-action="apagar-tudo">Apagar tudo</button>
+      </div>
+    </div>`;
+  const info = lerSync();
+  return `<div class="card">
+      <div class="card-head"><h2>Sua conta</h2><button class="btn sm" data-action="sair">Sair</button></div>
+      <p style="margin:-4px 0 6px">${esc(conta.user ? conta.user.email : '')}</p>
+      <p class="small muted" style="margin:0 0 12px">${conta.pendente ? 'Sem conexão no momento: as últimas mudanças serão enviadas quando a internet voltar.' : info.enviado ? `Dados sincronizados. Última atualização em ${new Date(info.enviado).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.` : 'Sincronizando...'} Entre com o mesmo email no computador e no celular para ver os mesmos dados.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" data-action="exportar">Exportar backup</button>
+        <label class="btn">Importar backup<input type="file" accept="application/json,.json" id="importar" hidden></label>
+        <button class="btn danger" data-action="apagar-tudo">Apagar tudo</button>
+      </div>
+    </div>`;
+}
+
+async function iniciarConta() {
+  const cfg = window.ORGFIN_FIREBASE;
+  if (!cfg || !cfg.apiKey) return false;
+  telaLogin('carregando');
+  $('#login').innerHTML = '<div class="login-card"><div class="login-brand"><img src="icons/icon.svg" alt="" width="44" height="44"><span>OrgFin</span></div><p class="login-sub">Carregando...</p></div>';
+  try {
+    conta.fb = await import('./vendor/firebase.min.mjs');
+  } catch (e) {
+    $('#login').innerHTML = '<div class="login-card"><p>Não foi possível carregar o login. Confira a internet e abra o app de novo.</p></div>';
+    return true;
+  }
+  const app = conta.fb.initializeApp(cfg);
+  conta.auth = conta.fb.getAuth(app); conta.auth.languageCode = 'pt-BR';
+  conta.db = conta.fb.getFirestore(app);
+  conta.fb.onAuthStateChanged(conta.auth, (user) => {
+    if (user) { esconderLogin(); render(); iniciarSync(user); }
+    else { conta.user = null; telaLogin('entrar'); }
+  });
+  return true;
+}
+
 /* ================= Início ================= */
 
 {
   const v = location.hash.slice(1);
   if (VIEWS[v]) ui.view = v;
-  render();
+  iniciarConta().then((comLogin) => { if (!comLogin) render(); });
 }
