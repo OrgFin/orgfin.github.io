@@ -1441,7 +1441,7 @@ function telaLogin(modo = 'entrar', aviso = '') {
   const el = $('#login');
   el.hidden = false; document.body.classList.add('com-login');
   el.innerHTML = `<div class="login-card">
-    <div class="login-brand"><img src="icons/icon.svg" alt="" width="44" height="44"><span>OrgFin</span></div>
+    <div class="login-brand"><img src="icons/icon.svg" alt="" width="60" height="60"><span>OrgFin</span></div>
     <p class="login-sub">Organização financeira pessoal</p>
     <div class="seg login-seg"><button type="button" data-login-modo="entrar" class="${modo === 'entrar' ? 'on' : ''}">Entrar</button><button type="button" data-login-modo="criar" class="${modo !== 'entrar' ? 'on' : ''}">Criar conta</button></div>
     ${modo === 'entrar' ? `
@@ -1566,7 +1566,7 @@ async function iniciarConta() {
   const cfg = window.ORGFIN_FIREBASE;
   if (!cfg || !cfg.apiKey) return false;
   telaLogin('carregando');
-  $('#login').innerHTML = '<div class="login-card"><div class="login-brand"><img src="icons/icon.svg" alt="" width="44" height="44"><span>OrgFin</span></div><p class="login-sub">Carregando...</p></div>';
+  $('#login').innerHTML = '<div class="login-card"><div class="login-brand"><img src="icons/icon.svg" alt="" width="60" height="60"><span>OrgFin</span></div><p class="login-sub">Carregando...</p></div>';
   try {
     conta.fb = await import('./vendor/firebase.min.mjs');
   } catch (e) {

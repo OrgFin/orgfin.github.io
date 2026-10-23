@@ -1,7 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#1f3fb2"/>
-  <rect x="96" y="300" width="64" height="116" rx="16" fill="#e25b4b"/>
-  <rect x="184" y="250" width="64" height="166" rx="16" fill="#f2c14e"/>
-  <rect x="272" y="190" width="64" height="226" rx="16" fill="#e8dcc4"/>
-  <rect x="360" y="110" width="64" height="306" rx="16" fill="#ffffff"/>
+  <rect width="512" height="512" rx="112" fill="#3a1d7a"/>
+  <g transform="translate(20.47999999999999 20.47999999999999) scale(0.92)">
+    <path d="M118 300 C 92 300, 84 270, 104 262 C 120 256, 124 280, 108 284" fill="none" stroke="#f5c400" stroke-width="12" stroke-linecap="round"/>
+    <rect x="168" y="352" width="50" height="70" rx="20" fill="#f5c400"/>
+    <rect x="292" y="352" width="50" height="70" rx="20" fill="#f5c400"/>
+    <ellipse cx="196" cy="196" rx="30" ry="46" transform="rotate(-28 196 196)" fill="#f5c400"/>
+    <ellipse cx="256" cy="296" rx="148" ry="116" fill="#ffe83a"/>
+    <ellipse cx="392" cy="302" rx="36" ry="42" fill="#f5c400"/>
+    <ellipse cx="382" cy="292" rx="7" ry="10" fill="#24104f"/>
+    <ellipse cx="402" cy="292" rx="7" ry="10" fill="#24104f"/>
+    <circle cx="326" cy="250" r="15" fill="#24104f"/>
+    <circle cx="331" cy="245" r="5" fill="#ffffff"/>
+    <circle cx="318" cy="300" r="16" fill="#ff9fc8" opacity=".7"/>
+    <rect x="216" y="186" width="84" height="16" rx="8" fill="#24104f"/>
+    <circle cx="258" cy="112" r="42" fill="#c9b5ff" stroke="#24104f" stroke-width="8"/>
+    <text x="258" y="130" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="52" fill="#24104f">$</text>
+  </g>
 </svg>
