@@ -299,6 +299,7 @@ body.com-login .app { visibility: hidden; }
 .login-form .link-btn { justify-self: center; font-size: .9rem; }
 .login-aviso { margin-top: 14px; font-size: .9rem; color: var(--ink-2); }
 .login-aviso:empty { display: none; }
+.login-enviado { background: var(--accent-soft); border-radius: 12px; padding: 14px; color: var(--ink); }
 .btn:disabled { opacity: .6; cursor: default; }
 
 /* celular */

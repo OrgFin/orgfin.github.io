@@ -1490,12 +1490,44 @@ document.addEventListener('submit', async (e) => {
       catch (err) { if (err.code !== 'auth/email-already-in-use') throw err; }
       finally { conta.criando = false; }
     }
-    try { await sendPasswordResetEmail(conta.auth, email, { url: location.origin + location.pathname }); }
-    catch (err) { if (err.code === 'auth/unauthorized-continue-uri') await sendPasswordResetEmail(conta.auth, email); else throw err; }
-    telaLogin('entrar', `Enviamos um email para <b>${esc(email)}</b>. Abra o link, crie sua senha e volte aqui para entrar. Se não chegar em alguns minutos, olhe a caixa de spam.`);
+    await enviarEmailSenha(email);
+    telaEmailEnviado(email);
   } catch (err) {
     aviso.textContent = msgErro(err); botao.disabled = false;
   }
+});
+
+async function enviarEmailSenha(email) {
+  const { sendPasswordResetEmail } = conta.fb;
+  try { await sendPasswordResetEmail(conta.auth, email, { url: location.origin + location.pathname }); }
+  catch (err) { if (err.code === 'auth/unauthorized-continue-uri') await sendPasswordResetEmail(conta.auth, email); else throw err; }
+}
+
+// Depois de mandar o email: espera 30 segundos e libera o botão de reenviar
+function telaEmailEnviado(email, reenviado = false) {
+  const remetente = `noreply@${(window.ORGFIN_FIREBASE || {}).authDomain || 'firebaseapp.com'}`;
+  telaLogin('entrar', `<div class="login-enviado">
+      <p style="margin:0 0 8px">${reenviado ? 'Enviamos de novo' : 'Enviamos'} um email para <b>${esc(email)}</b>. Abra o link, crie sua senha e volte aqui para entrar.</p>
+      <p class="small muted" style="margin:0 0 12px">Pode levar alguns minutos. Se não aparecer, procure nas pastas Spam e Promoções pelo remetente <b>${esc(remetente)}</b>.</p>
+      <button type="button" class="btn" id="reenviar" data-email="${esc(email)}" disabled>Reenviar email em 30 s</button>
+    </div>`);
+  const f = $('#formEntrar input[name=email]'); if (f) f.value = email;
+  const btn = $('#reenviar'); let falta = 30;
+  clearInterval(conta.relogio);
+  conta.relogio = setInterval(() => {
+    if (!document.body.contains(btn)) { clearInterval(conta.relogio); return; }
+    falta -= 1;
+    if (falta <= 0) { clearInterval(conta.relogio); btn.disabled = false; btn.textContent = 'Reenviar email'; }
+    else btn.textContent = `Reenviar email em ${falta} s`;
+  }, 1000);
+}
+
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('#reenviar');
+  if (!b || b.disabled) return;
+  b.disabled = true; b.textContent = 'Enviando...';
+  try { await enviarEmailSenha(b.dataset.email); telaEmailEnviado(b.dataset.email, true); }
+  catch (err) { b.disabled = false; b.textContent = 'Reenviar email'; toast(msgErro(err)); }
 });
 
 async function sairDaConta() {
