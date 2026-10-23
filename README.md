@@ -14,7 +14,7 @@ App de organização financeira pessoal que instala no computador e no celular (
 
 ## Publicar
 
-É um site estático, sem etapa de build. Basta servir esta pasta por https (por exemplo, GitHub Pages). Ao mudar qualquer arquivo, aumente a versão em `sw.js` (`meu-caixa-vN`) para os aparelhos instalados pegarem a atualização.
+O app fica em https://orgfin.github.io (repositório OrgFin/orgfin.github.io). É um site estático, sem etapa de build. Basta servir esta pasta por https (por exemplo, GitHub Pages). Ao mudar qualquer arquivo, aumente a versão em `sw.js` (`orgfin-vN`) para os aparelhos instalados pegarem a atualização.
 
 ## Dados
 
